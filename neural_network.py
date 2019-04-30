@@ -6,55 +6,51 @@ import matplotlib as matplot
 
 
 class Neurons:
-    value = float()
+    value = []
     weights = []
-    net = float()
-    out = float()
-    error = float()
-    totalError = float()
+    net = []
+    out = []
+    error = []
 
     def __init__(self):
         self.weights = []
-        self.error = 0
-        self.value = 0
-        self.net = 0
-        self.out = 0
-        self.totalError = 0
+        self.error = []
+        self.value = []
+        self.net = []
+        self.out = []
 
     def init_weights(self, n_weights):
         for i in range(n_weights):
             self.weights.append(random.uniform(0, 1))
 
     def init_value(self, value):
-        self.value = value
+        self.value.append(value)
 
-    def calculate_error(self, answer, step):
+    def calculate_error(self, answer, step, batch):
 
-        x = 0.5*((answer[step] - self.out)**2)
-        self.error = x
+        x = 0.5*((answer[batch][step] - self.out[batch])**2)
+        self.error.append(x)
 
-    def weighted_sum(self, step, input_neurons, bias):
+    def weighted_sum(self, step, input_neurons, bias, batch):
 
         total = 0
         for i in range(nInput):
-            x = (input_neurons[i].weights[step] * input_neurons[i].value)
+            x = (input_neurons[i].weights[step] * input_neurons[i].value[batch])
             total += x
         total += bias
-        self.net = total
-        print()
+        self.net.append(total)
 
-    def hidden_weighted_sum(self, step, hidden_neurons, bias):
+    def hidden_weighted_sum(self, step, hidden_neurons, bias, batch):
 
         total = 0
         for i in range(nHidden):
-            x = (hidden_neurons[i].weights[step] * hidden_neurons[i].out)
+            x = (hidden_neurons[i].weights[step] * hidden_neurons[i].out[batch])
             total += x
         total += bias
-        self.net = total
-        print()
+        self.net.append(total)
 
-    def sigmoid_function(self):
-        self.out = (1/(1+math.exp(-self.net)))
+    def sigmoid_function(self, batch):
+        self.out.append(1/(1+math.exp(-self.net[batch])))
 
 
 def init_neurons():
@@ -82,17 +78,54 @@ def parse_label(labels):
     return label
 
 
+def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch):
+
+    gradient_vector = []
+    totalErrors = []
+    totalOutputs = []
+
+    # calculates the gradient values for the hidden weights
+    for i in range(len(hidden_neurons)):
+        hidden = hidden_neurons[i]
+        error = -(label[i] - output_neurons[i].out[batch])
+        output = (output_neurons[i].out[batch] * (1 - output_neurons[i].out[batch]))
+        print(error)
+        print(output)
+        totalErrors.append(error)
+        totalOutputs.append(output)
+        for j in range(len(output_neurons)):
+            # error = -(label[i] - output_neurons[j].out[batch])
+            # output = (output_neurons[j].out[batch] * (1 - output_neurons[j].out[batch]))
+            gradient = (error * output * hidden.out[batch])
+            gradient_vector.append(gradient)
+
+    # calculates the error value for all output nodes in relation to the inputs
+    for i in range(len(totalErrors)):
+        totalErrors[i] = totalErrors[i] * totalOutputs[i]
+
+    # TODO: here, calculated error value for all nodes, need the other 2 values and then combine into gradient
+    # calculates the gradient values for the input weights
+    for i in range(len(input_neurons)):
+        for j in range(len(hidden_neurons)):
+            gradient = totalErrors[i] * hidden_neurons[i].out[batch]
+            print("gradient: " + str(gradient))
+
+    return
+
+
 def train_neural_net(x, y):
 
-    label = parse_label(trainLabel[0])
-    total_Error = 0
+    label = []
+    for i in range(len(trainLabel)):
+        label.append(parse_label(trainLabel[i]))
+    total_Error = []
+    next_total_error = 0
 
     # init input neurons
     input_neurons = []
     for i in range(nInput):
         neuron = Neurons()
         neuron.init_weights(nHidden)
-        neuron.init_value(trainSet[0][i])
         input_neurons.append(neuron)
 
     # init hidden neurons
@@ -114,24 +147,33 @@ def train_neural_net(x, y):
         neuron = Neurons()
         output_neurons.append(neuron)
 
-    # calculate the weighted sum of input values
-    for i in range(nHidden):
-        hidden_neurons[i].weighted_sum(i, input_neurons, hidden_bias.weights[0])
+    # TODO: for larger batch values preserve the iterator of nBatches complete to pickup from where the batches left off
+    for k in range(nEpochs):
+        # calculate values for all inputs in batch
+        for j in range(batchSize):
+            # input values
+            for i in range(nInput):
+                input_neurons[i].init_value(trainSet[j][i])
 
-    # calculate the sigmoid function of the hidden layer
-    for i in range(nHidden):
-        hidden_neurons[i].sigmoid_function()
+            # calculate the weighted sum of input values
+            for i in range(nHidden):
+                hidden_neurons[i].weighted_sum(i, input_neurons, hidden_bias.weights[0], j)
 
-    # calculate the weighted sum of the output layer
-    for i in range(nOutPut):
-        output_neurons[i].hidden_weighted_sum(i, hidden_neurons, output_bias.weights[0])
+            # calculate the sigmoid function of the hidden layer
+            for i in range(nHidden):
+                hidden_neurons[i].sigmoid_function(j)
 
-    # calculate the final output and error value for the initial values
-    for i in range(nOutPut):
-        output_neurons[i].sigmoid_function()
-        output_neurons[i].calculate_error(label, i)
-        total_Error += output_neurons[i].error
+            # calculate the weighted sum of the output layer
+            for i in range(nOutPut):
+                output_neurons[i].hidden_weighted_sum(i, hidden_neurons, output_bias.weights[0], j)
 
+            # calculate the final output and error value for the initial values
+            for i in range(nOutPut):
+                output_neurons[i].sigmoid_function(j)
+                output_neurons[i].calculate_error(label, i, j)
+                next_total_error += output_neurons[i].error[j]
+            total_Error.append(next_total_error)
+            back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j)
 
     print()
 
@@ -152,7 +194,7 @@ else:
     exit(1)
 
 nEpochs = 30
-batchSize = 20
+batchSize = 2
 learningRate = 3
 
 for i in range(1, len(sys.argv)):
