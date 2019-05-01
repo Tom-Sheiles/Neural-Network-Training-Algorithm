@@ -78,37 +78,64 @@ def parse_label(labels):
     return label
 
 
+def predict_answer(answers, batch):
+    predictions = []
+    for i in range(len(answers)):
+        predictions.append(answers[i].out[batch])
+
+    highest = predictions[0]
+    highest_pos = 0
+
+    for i in range(len(predictions)):
+        if predictions[i] > highest:
+            highest = predictions[i]
+            highest_pos = i
+    return highest_pos
+
+
 def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch):
 
     gradient_vector = []
     totalErrors = []
     totalOutputs = []
+    input_gradients = []
 
+    # TODO: update biases using the same method
     # calculates the gradient values for the hidden weights
     for i in range(len(hidden_neurons)):
-        hidden = hidden_neurons[i]
         error = -(label[i] - output_neurons[i].out[batch])
         output = (output_neurons[i].out[batch] * (1 - output_neurons[i].out[batch]))
-        print(error)
-        print(output)
         totalErrors.append(error)
         totalOutputs.append(output)
+    for i in range(len(hidden_neurons)):
         for j in range(len(output_neurons)):
-            # error = -(label[i] - output_neurons[j].out[batch])
-            # output = (output_neurons[j].out[batch] * (1 - output_neurons[j].out[batch]))
-            gradient = (error * output * hidden.out[batch])
+            gradient = (totalErrors[j] * totalOutputs[j] * hidden_neurons[i].out[batch])
             gradient_vector.append(gradient)
 
-    # calculates the error value for all output nodes in relation to the inputs
+    # calculate value for error and output values for hidden and output neurons
     for i in range(len(totalErrors)):
         totalErrors[i] = totalErrors[i] * totalOutputs[i]
+    for i in range(len(totalOutputs)):
+        totalOutputs[i] = totalOutputs[i] * (1 - totalOutputs[i])
 
-    # TODO: here, calculated error value for all nodes, need the other 2 values and then combine into gradient
     # calculates the gradient values for the input weights
     for i in range(len(input_neurons)):
         for j in range(len(hidden_neurons)):
-            gradient = totalErrors[i] * hidden_neurons[i].out[batch]
-            print("gradient: " + str(gradient))
+            error = 0
+            for k in range(len(hidden_neurons[i].weights)):
+                error += totalErrors[k] * hidden_neurons[i].weights[k]
+            gradient = error * totalOutputs[j] * input_neurons[i].value[batch]
+            input_gradients.append(gradient)
+
+    for i in range(len(gradient_vector)):
+        input_gradients.append(gradient_vector[i])
+
+    return input_gradients
+
+
+def calculate_new_weights(gradient):
+
+
 
     return
 
@@ -116,6 +143,7 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
 def train_neural_net(x, y):
 
     label = []
+    gradient_vectors = []
     for i in range(len(trainLabel)):
         label.append(parse_label(trainLabel[i]))
     total_Error = []
@@ -147,7 +175,10 @@ def train_neural_net(x, y):
         neuron = Neurons()
         output_neurons.append(neuron)
 
-    # TODO: for larger batch values preserve the iterator of nBatches complete to pickup from where the batches left off
+    predictions = []
+    answers = []
+    n = 0
+    # update weights in k batch size for epoch times
     for k in range(nEpochs):
         # calculate values for all inputs in batch
         for j in range(batchSize):
@@ -173,8 +204,27 @@ def train_neural_net(x, y):
                 output_neurons[i].calculate_error(label, i, j)
                 next_total_error += output_neurons[i].error[j]
             total_Error.append(next_total_error)
-            back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j)
 
+            # make prediction based on initial weights
+            prediction = predict_answer(output_neurons, j)
+            predictions.append(prediction)
+            answers.append(trainLabel[j])
+            print("Batch " + str(j))
+            print("Predicted Answer: " + str(prediction))
+            print("Actual Answer: " + str(trainLabel[j]))
+            print("------------------")
+            n+=1
+
+            # calculate back propagation
+            gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
+        calculate_new_weights(gradient_vectors)
+
+    correct = 0
+    for i in range(len(predictions)):
+        if predictions[i] == answers[i]:
+            correct += 1
+    print()
+    print("Accuracy: " + str(correct/n))
     print()
 
 
