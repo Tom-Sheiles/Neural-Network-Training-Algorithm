@@ -53,6 +53,7 @@ class Neurons:
         self.out.append(1/(1+math.exp(-self.net[batch])))
 
 
+# TODO: Straight Up delete your function
 def init_neurons():
 
     neurons = []
@@ -133,11 +134,49 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     return input_gradients
 
 
-def calculate_new_weights(gradient):
+def calculate_new_weights(gradient, current):
+
+    # Calculate the final gradient error for all weights in the batch
+    new_gradients = []
+    for i in range(len(gradient[0])):
+        weight_total = 0
+        n = 0
+        for j in range(len(gradient)):
+            weight_total += gradient[j][i]
+            n += 1
+        weight_total /= n
+        new_gradients.append(weight_total)
+
+    for i in range(len(new_gradients)):
+        new_gradients[i] = current[i] - (learningRate * new_gradients[i])
+
+    return new_gradients
 
 
+def update_weights(inputs, hidden, new):
+
+    for i in range(len(inputs)):
+        for j in range(len(inputs[i].weights)):
+            inputs[i].weights[j] = new.pop(0)
+
+    for i in range(len(hidden)):
+        for j in range(len(hidden[i].weights)):
+            hidden[i].weights[j] = new.pop(0)
 
     return
+
+
+def get_current_weights(inputs, hidden):
+
+    weights = []
+    for i in inputs:
+        for j in range(len(i.weights)):
+            weights.append(i.weights[j])
+    for i in hidden:
+        for j in range(len(i.weights)):
+            weights.append(i.weights[j])
+
+    return weights
 
 
 def train_neural_net(x, y):
@@ -175,6 +214,8 @@ def train_neural_net(x, y):
         neuron = Neurons()
         output_neurons.append(neuron)
 
+    print("\ninitial Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
+
     predictions = []
     answers = []
     n = 0
@@ -209,20 +250,41 @@ def train_neural_net(x, y):
             prediction = predict_answer(output_neurons, j)
             predictions.append(prediction)
             answers.append(trainLabel[j])
+            '''
             print("Batch " + str(j))
             print("Predicted Answer: " + str(prediction))
             print("Actual Answer: " + str(trainLabel[j]))
             print("------------------")
-            n+=1
+            '''
+            n += 1
+            # if n % 500 == 0:
+                # print(str(n) + "th epoch...")
+                # print(get_current_weights(input_neurons, hidden_neurons)[0])
 
             # calculate back propagation
             gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
-        calculate_new_weights(gradient_vectors)
 
+        current_weights = get_current_weights(input_neurons, hidden_neurons)
+        new_weights = calculate_new_weights(gradient_vectors, current_weights)
+        update_weights(input_neurons, hidden_neurons, new_weights)
+
+        total_Error.clear()
+        gradient_vectors.clear()
+        for i in range(len(input_neurons)):
+            input_neurons[i].value.clear()
+        for i in range(len(hidden_neurons)):
+            hidden_neurons[i].net.clear()
+            hidden_neurons[i].out.clear()
+        for i in range(len(output_neurons)):
+            output_neurons[i].error.clear()
+            output_neurons[i].net.clear()
+            output_neurons[i].out.clear()
     correct = 0
     for i in range(len(predictions)):
         if predictions[i] == answers[i]:
             correct += 1
+
+    print("Final Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
     print()
     print("Accuracy: " + str(correct/n))
     print()
@@ -243,9 +305,9 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 30
+nEpochs = 1000
 batchSize = 2
-learningRate = 3
+learningRate = 0.03
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
