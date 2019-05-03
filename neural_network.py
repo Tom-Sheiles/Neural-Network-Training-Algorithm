@@ -22,6 +22,7 @@ class Neurons:
     def init_weights(self, n_weights):
         for i in range(n_weights):
             self.weights.append(random.uniform(0, 1))
+            # self.weights.append(0.1)
 
     def init_value(self, value):
         self.value.append(value)
@@ -101,9 +102,9 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     totalOutputs = []
     input_gradients = []
 
-    # TODO: update biases using the same method
     # calculates the gradient values for the hidden weights
-    for i in range(len(hidden_neurons)):
+    # TODO: was len(hidden)
+    for i in range(len(output_neurons)):
         error = -(label[i] - output_neurons[i].out[batch])
         output = (output_neurons[i].out[batch] * (1 - output_neurons[i].out[batch]))
         totalErrors.append(error)
@@ -119,13 +120,18 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     for i in range(len(totalOutputs)):
         totalOutputs[i] = totalOutputs[i] * (1 - totalOutputs[i])
 
+    x = 0
     # calculates the gradient values for the input weights
     for i in range(len(input_neurons)):
         for j in range(len(hidden_neurons)):
             error = 0
-            for k in range(len(hidden_neurons[i].weights)):
-                error += totalErrors[k] * hidden_neurons[i].weights[k]
-            gradient = error * totalOutputs[j] * input_neurons[i].value[batch]
+            # TODO: was hidden.weights
+            for k in range(len(hidden_neurons[j].weights)):
+                error += totalErrors[k] * hidden_neurons[j].weights[k]
+            gradient = error * totalOutputs[x] * input_neurons[i].value[batch]
+            x += 1
+            if x >= len(totalOutputs):
+                x = 0
             input_gradients.append(gradient)
 
     for i in range(len(gradient_vector)):
@@ -195,6 +201,9 @@ def train_neural_net(x, y):
         neuron.init_weights(nHidden)
         input_neurons.append(neuron)
 
+    # TODO: Remove this line and uncomment function later
+    # input_neurons[1].weights[0] = 0.2
+
     # init hidden neurons
     hidden_neurons = []
     for i in range(nHidden):
@@ -202,11 +211,14 @@ def train_neural_net(x, y):
         neuron.init_weights(nOutPut)
         hidden_neurons.append(neuron)
 
+    # TODO: Remove this line and uncomment function later
+    # hidden_neurons[1].weights[1] = 0.2
+
     # init bias values for hidden layer and output layer
     hidden_bias = Neurons()
     output_bias = Neurons()
-    hidden_bias.init_weights(1)
-    output_bias.init_weights(1)
+    hidden_bias.init_weights(nHidden)
+    output_bias.init_weights(nOutPut)
 
     # init output neurons
     output_neurons = []
@@ -229,7 +241,7 @@ def train_neural_net(x, y):
 
             # calculate the weighted sum of input values
             for i in range(nHidden):
-                hidden_neurons[i].weighted_sum(i, input_neurons, hidden_bias.weights[0], j)
+                hidden_neurons[i].weighted_sum(i, input_neurons, hidden_bias.weights[i], j)
 
             # calculate the sigmoid function of the hidden layer
             for i in range(nHidden):
@@ -237,7 +249,7 @@ def train_neural_net(x, y):
 
             # calculate the weighted sum of the output layer
             for i in range(nOutPut):
-                output_neurons[i].hidden_weighted_sum(i, hidden_neurons, output_bias.weights[0], j)
+                output_neurons[i].hidden_weighted_sum(i, hidden_neurons, output_bias.weights[i], j)
 
             # calculate the final output and error value for the initial values
             for i in range(nOutPut):
@@ -248,25 +260,27 @@ def train_neural_net(x, y):
 
             # make prediction based on initial weights
             prediction = predict_answer(output_neurons, j)
+            # if prediction is 0:
+                # print(prediction)
             predictions.append(prediction)
             answers.append(trainLabel[j])
-            '''
-            print("Batch " + str(j))
+
+            '''print("Batch " + str(j))
             print("Predicted Answer: " + str(prediction))
             print("Actual Answer: " + str(trainLabel[j]))
-            print("------------------")
-            '''
+            print("------------------")'''
+
             n += 1
-            # if n % 500 == 0:
-                # print(str(n) + "th epoch...")
-                # print(get_current_weights(input_neurons, hidden_neurons)[0])
 
             # calculate back propagation
             gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
-
         current_weights = get_current_weights(input_neurons, hidden_neurons)
         new_weights = calculate_new_weights(gradient_vectors, current_weights)
         update_weights(input_neurons, hidden_neurons, new_weights)
+
+        #print(get_current_weights(input_neurons, hidden_neurons))
+        #print()
+        # TODO: Verifiy that the calculations are correct
 
         total_Error.clear()
         gradient_vectors.clear()
@@ -305,9 +319,9 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 1000
+nEpochs = 10000
 batchSize = 2
-learningRate = 0.03
+learningRate = 0.1
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
