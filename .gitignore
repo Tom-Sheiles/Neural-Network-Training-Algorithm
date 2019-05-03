@@ -7,3 +7,6 @@
 test.csv
 TrainDigitX.csv.gz
 TrainDigitY.csv.gz
+BACKUP/neural_network.py
+smallX.csv
+smallY.csv
