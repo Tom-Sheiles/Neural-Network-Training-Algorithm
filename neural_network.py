@@ -2,7 +2,9 @@ import sys
 import math
 import random
 import numpy as np
-import matplotlib as matplot
+import matplotlib.pyplot as plt
+import matplotlib.animation as animate
+import time
 
 
 class Neurons:
@@ -103,7 +105,6 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     input_gradients = []
 
     # calculates the gradient values for the hidden weights
-    # TODO: was len(hidden)
     for i in range(len(output_neurons)):
         error = -(label[i] - output_neurons[i].out[batch])
         output = (output_neurons[i].out[batch] * (1 - output_neurons[i].out[batch]))
@@ -125,7 +126,6 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     for i in range(len(input_neurons)):
         for j in range(len(hidden_neurons)):
             error = 0
-            # TODO: was hidden.weights
             for k in range(len(hidden_neurons[j].weights)):
                 error += totalErrors[k] * hidden_neurons[j].weights[k]
             gradient = error * totalOutputs[x] * input_neurons[i].value[batch]
@@ -185,6 +185,57 @@ def get_current_weights(inputs, hidden):
     return weights
 
 
+def save_weights(input, hidden, hidden_bias, output_bias):
+    f = open("SavedWeights.txt", "a")
+    for i in range(len(input)):
+        for j in range(len(input[i].weights)):
+            f.write(str(input[i].weights[j]) + "\n")
+    f.write("\n")
+    for i in range(len(hidden)):
+        for j in range(len(hidden[i].weights)):
+            f.write(str(hidden[i].weights[j]) + "\n")
+    f.write("\n")
+
+    for i in range(len(hidden_bias.weights)):
+        f.write(str(hidden_bias.weights[i]) + "\n")
+    f.write("\n")
+
+    for i in range(len(output_bias.weights)):
+        f.write(str(output_bias.weights[i]) + "\n")
+    f.write("\n")
+
+    f.close()
+
+
+def quadratic_cost_function(batch_size, output, labels, batch):
+
+    labels_vector = []
+    for i in range(len(labels)):
+        labels_vector.append(parse_label(labels[i]))
+
+    output_vector = []
+    for i in range(len(output)):
+        output_vector.append(output[i].out[batch])
+        pass
+
+    total = 0
+    for i in range(len(output_vector)):
+        total += (abs(output_vector[i] - labels_vector[batch][i]))
+    total = total ** 2
+    total *= 1/(2*batch_size)
+
+    # print("total " + str(total))
+    return total
+
+
+def graph_cost(i):
+
+    ax.clear()
+    ax.plot(xs)
+
+    return
+
+
 def train_neural_net(x, y):
 
     label = []
@@ -231,14 +282,16 @@ def train_neural_net(x, y):
 
     predictions = []
     answers = []
+    xs = []
     batch_n = -1
     n = 0
+    last_answer_size = 0
     while True:
         # update weights in k batch size for epoch times
         for k in range(nEpochs):
             # calculate values for all inputs in batch
+            p = 0
             for z in range(len(trainSet)):
-
                 for j in range(batchSize):
 
                     batch_n += 1
@@ -275,6 +328,8 @@ def train_neural_net(x, y):
                     predictions.append(prediction)
                     answers.append(trainLabel[batch_n])
 
+                    # quadratic_cost_function(batchSize, output_neurons, answers)
+
                     '''print("Batch " + str(j))
                     print("Predicted Answer: " + str(prediction))
                     print("Actual Answer: " + str(trainLabel[j]))
@@ -284,10 +339,26 @@ def train_neural_net(x, y):
 
                     # calculate back propagation
                     gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
-                print("Batch complete")
+                    '''output_neurons_output = []
+                    for q in output_neurons:
+                        for p in range(len(q.out)):
+                            output_neurons_output.append(q.out[p])
+                    quad_cost = quadratic_cost_function(batchSize, output_neurons_output, trainLabel[batch_n])'''
+
                 current_weights = get_current_weights(input_neurons, hidden_neurons)
                 new_weights = calculate_new_weights(gradient_vectors, current_weights)
                 update_weights(input_neurons, hidden_neurons, new_weights)
+
+                '''prediction_number += 1
+                prediction = predict_answer(output_neurons, 0)
+                predictions.append(prediction)
+                answers.append(trainLabel[0])'''
+                len_answers = len(answers)
+                sub_set_answers = answers[last_answer_size:len_answers]
+                for n_answers in range(len(sub_set_answers)):
+                    quadratic_cost = quadratic_cost_function(batchSize, output_neurons, sub_set_answers, n_answers)
+                    xs.append(quadratic_cost)
+                last_answer_size += batchSize
 
                 # reset values for neurons
                 total_Error.clear()
@@ -303,6 +374,11 @@ def train_neural_net(x, y):
                     output_neurons[i].out.clear()
 
             print("Epoch " + str(k + 1))
+            correct = 0
+            for i in range(len(predictions)):
+                if predictions[i] == answers[i]:
+                    correct += 1
+            print("Accuracy: " + str(correct / len(answers)))
 
         correct = 0
         for i in range(len(predictions)):
@@ -313,11 +389,21 @@ def train_neural_net(x, y):
         print(n)
         print("Initl Weights: " + str(initial_weigths))
         print("Final Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
-        print("\nAccuracy: " + str(correct/n))
+        print("\nAccuracy: " + str(correct/len(answers)))
+        plt.plot(xs)
+        plt.title("Cost Over time")
+        plt.xlabel("Number of Epochs")
+        plt.ylabel("Quadratic Cost")
+        plt.show()
 
         continueInput = input("Continue Training? (y/n): ")
         if continueInput == "n":
-            break
+            continueInput = input("Save Weights to \"SavedWeights.txt\" (y/n)")
+            if continueInput == "y":
+                save_weights(input_neurons, hidden_neurons, hidden_bias, output_bias)
+                break
+            else:
+                break
 
 
 argumentNumber = len(sys.argv)
@@ -335,9 +421,8 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-# TODO: Weird batch epoch relationship needs to be fixed
-nEpochs = 1
-batchSize = 784
+nEpochs = 1000
+batchSize = 3
 learningRate = 10
 
 for i in range(1, len(sys.argv)):
@@ -351,5 +436,9 @@ print("Training Set Loaded. ")
 print("\nLoading Training Labels... ")
 trainLabel = np.loadtxt(trainLabel, int, delimiter=",")
 print("Training Labels Loaded. ")
+
+if batchSize > len(trainSet):
+    print("\nERROR: Batch Size larger than Number of inputs")
+    exit(1)
 
 train_neural_net(trainSet, trainLabel)
