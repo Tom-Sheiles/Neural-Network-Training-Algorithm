@@ -23,7 +23,7 @@ class Neurons:
 
     def init_weights(self, n_weights):
         for i in range(n_weights):
-            self.weights.append(random.uniform(0, 1))
+            self.weights.append(0.01 * random.uniform(0, 1))
             # self.weights.append(0.1)
 
     def init_value(self, value):
@@ -235,14 +235,6 @@ def quadratic_cost_function(batch_size, output, labels, batch):
     return total
 
 
-def graph_cost(i):
-
-    ax.clear()
-    ax.plot(xs)
-
-    return
-
-
 def train_neural_net(x, y):
 
     label = []
@@ -290,6 +282,7 @@ def train_neural_net(x, y):
     predictions = []
     answers = []
     xs = []
+    accuracy = []
     batch_n = -1
     n = 0
     last_answer_size = 0
@@ -386,6 +379,7 @@ def train_neural_net(x, y):
                 if predictions[i] == answers[i]:
                     correct += 1
             print("Accuracy: " + str(correct / len(answers)))
+            accuracy.append(correct/len(answers))
 
         correct = 0
         for i in range(len(predictions)):
@@ -397,11 +391,13 @@ def train_neural_net(x, y):
         print("Initl Weights: " + str(initial_weigths))
         print("Final Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
         print("\nAccuracy: " + str(correct/len(answers)))
-        plt.plot(xs)
+        plt.plot(accuracy)
         plt.title("Cost Over time")
         plt.xlabel("Number of Epochs")
         plt.ylabel("Quadratic Cost")
         plt.show()
+        print(predictions[-100:])
+        print(answers[-100:])
 
         continueInput = input("Continue Training? (y/n): ")
         if continueInput == "n":
@@ -428,9 +424,9 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 1000
+nEpochs = 125
 batchSize = 10
-learningRate = 3
+learningRate = 6
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
