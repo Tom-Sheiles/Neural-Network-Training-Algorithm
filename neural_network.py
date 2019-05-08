@@ -53,7 +53,14 @@ class Neurons:
         self.net.append(total)
 
     def sigmoid_function(self, batch):
-        self.out.append(1/(1+math.exp(-self.net[batch])))
+        try:
+            self.out.append(1/(1+math.exp(-self.net[batch])))
+        except:
+            if self.net[batch] < 0:
+                self.net[batch] = -1
+            else:
+                self.net[batch] = 1
+            self.out.append(1/(1+math.exp(-self.net[batch])))
 
 
 # TODO: Straight Up delete your function
@@ -278,7 +285,7 @@ def train_neural_net(x, y):
         output_neurons.append(neuron)
 
     initial_weigths = get_current_weights(input_neurons, hidden_neurons)
-    print("\ninitial Weights: " + str(initial_weigths))
+    # print("\ninitial Weights: " + str(initial_weigths))
 
     predictions = []
     answers = []
@@ -422,8 +429,8 @@ else:
     exit(1)
 
 nEpochs = 1000
-batchSize = 3
-learningRate = 10
+batchSize = 10
+learningRate = 3
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
