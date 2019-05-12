@@ -3,7 +3,7 @@ import math
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animate
+from copy import deepcopy as deepcopy
 import time
 
 
@@ -56,11 +56,8 @@ class Neurons:
         try:
             self.out.append(1/(1+math.exp(-self.net[batch])))
         except:
-            if self.net[batch] < 0:
-                self.net[batch] = -1
-            else:
-                self.net[batch] = 1
-            self.out.append(1/(1+math.exp(-self.net[batch])))
+            self.net[batch] *= 0.01
+            self.out.append(1 / (1 + math.exp(-self.net[batch])))
 
 
 # TODO: Straight Up delete your function
@@ -155,6 +152,7 @@ def calculate_new_weights(gradient, current):
         weight_total = 0
         n = 0
         for j in range(len(gradient)):
+            x = gradient[j][i]
             weight_total += gradient[j][i]
             n += 1
         weight_total /= n
@@ -235,6 +233,47 @@ def quadratic_cost_function(batch_size, output, labels, batch):
     return total
 
 
+def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
+
+    # print("Calculating Test Values")
+    test_subset = 1000
+    predictions = []
+    answers = []
+    correct = 0
+    for step in range(test_subset):
+
+        for i in range(nInput):
+            inputs[i].init_value(testSet[step][i])
+
+        # calculate the weighted sum of input values
+        for i in range(nHidden):
+            hidden[i].weighted_sum(i, inputs, hidden_bias.weights[i], step)
+        # calculate the sigmoid function of the hidden layer
+        for i in range(nHidden):
+            hidden[i].sigmoid_function(step)
+
+        # calculate the weighted sum of the output layer
+        for i in range(nOutPut):
+            output[i].hidden_weighted_sum(i, hidden, output_bias.weights[i], step)
+
+        # calculate the final output and error value for the initial values
+        for i in range(nOutPut):
+            output[i].sigmoid_function(step)
+
+        prediction = predict_answer(output, step)
+        predictions.append(prediction)
+        answers.append(testLabel[step])
+
+    for i in range(len(predictions)):
+        if predictions[i] == answers[i]:
+            correct += 1
+
+    accuracy = correct/test_subset
+    print("Test Accuracy: " + str(accuracy))
+
+    return accuracy
+
+
 def train_neural_net(x, y):
 
     label = []
@@ -282,6 +321,7 @@ def train_neural_net(x, y):
     predictions = []
     answers = []
     xs = []
+    ys = []
     accuracy = []
     batch_n = -1
     n = 0
@@ -381,6 +421,10 @@ def train_neural_net(x, y):
             print("Accuracy: " + str(correct / len(answers)))
             accuracy.append(correct/len(answers))
 
+            test_set_accuracy = test_accuracy(deepcopy(input_neurons), deepcopy(hidden_neurons),
+                                              deepcopy(output_neurons), hidden_bias, output_bias)
+            ys.append(test_set_accuracy)
+
         correct = 0
         for i in range(len(predictions)):
             if predictions[i] == answers[i]:
@@ -391,22 +435,24 @@ def train_neural_net(x, y):
         print("Initl Weights: " + str(initial_weigths))
         print("Final Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
         print("\nAccuracy: " + str(correct/len(answers)))
-        plt.plot(accuracy)
+        plt.plot(accuracy, label="Train Accuracy")
+        plt.plot(ys, label="Test Accuracy")
+        plt.legend()
         plt.title("Cost Over time")
         plt.xlabel("Number of Epochs")
-        plt.ylabel("Quadratic Cost")
+        plt.ylabel("Accuracy")
         plt.show()
-        print(predictions[-100:])
-        print(answers[-100:])
 
-        continueInput = input("Continue Training? (y/n): ")
+
+        '''continueInput = input("Continue Training? (y/n): ")
         if continueInput == "n":
             continueInput = input("Save Weights to \"SavedWeights.txt\" (y/n)")
             if continueInput == "y":
                 save_weights(input_neurons, hidden_neurons, hidden_bias, output_bias)
                 break
             else:
-                break
+                break'''
+        return
 
 
 argumentNumber = len(sys.argv)
@@ -424,9 +470,9 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 125
-batchSize = 10
-learningRate = 6
+nEpochs = 30
+batchSize = 20
+learningRate = 1
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
@@ -439,6 +485,20 @@ print("Training Set Loaded. ")
 print("\nLoading Training Labels... ")
 trainLabel = np.loadtxt(trainLabel, int, delimiter=",")
 print("Training Labels Loaded. ")
+
+print("\nLoading Test Set... ")
+try:
+    testSet = np.loadtxt(testSet, float, delimiter=",")
+except:
+    pass
+print("Test Set Loaded. ")
+
+print("\nLoading Test Labels... ")
+try:
+    testLabel = np.loadtxt(testLabel, int, delimiter=",")
+except:
+    pass
+print("Test Labels Loaded. ")
 
 if batchSize > len(trainSet):
     print("\nERROR: Batch Size larger than Number of inputs")
