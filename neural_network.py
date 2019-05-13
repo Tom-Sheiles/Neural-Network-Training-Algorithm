@@ -24,7 +24,6 @@ class Neurons:
     def init_weights(self, n_weights):
         for i in range(n_weights):
             self.weights.append(0.01 * random.uniform(0, 1))
-            # self.weights.append(0.1)
 
     def init_value(self, value):
         self.value.append(value)
@@ -191,6 +190,7 @@ def get_current_weights(inputs, hidden):
 
 
 def save_weights(input, hidden, hidden_bias, output_bias):
+
     f = open("SavedWeights.txt", "a")
     for i in range(len(input)):
         for j in range(len(input[i].weights)):
@@ -210,6 +210,7 @@ def save_weights(input, hidden, hidden_bias, output_bias):
     f.write("\n")
 
     f.close()
+    return
 
 
 def quadratic_cost_function(batch_size, output, labels, batch):
@@ -229,14 +230,12 @@ def quadratic_cost_function(batch_size, output, labels, batch):
     total = total ** 2
     total *= 1/(2*batch_size)
 
-    # print("total " + str(total))
     return total
 
 
 def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
 
-    # print("Calculating Test Values")
-    test_subset = 1000
+    test_subset = 1
     predictions = []
     answers = []
     correct = 0
@@ -274,8 +273,9 @@ def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
     return accuracy
 
 
-def train_neural_net(x, y):
+def train_neural_net():
 
+    start = time.clock()
     label = []
     gradient_vectors = []
     for i in range(len(trainLabel)):
@@ -290,18 +290,12 @@ def train_neural_net(x, y):
         neuron.init_weights(nHidden)
         input_neurons.append(neuron)
 
-    # TODO: Remove this line and uncomment function later
-    # input_neurons[1].weights[0] = 0.2
-
     # init hidden neurons
     hidden_neurons = []
     for i in range(nHidden):
         neuron = Neurons()
         neuron.init_weights(nOutPut)
         hidden_neurons.append(neuron)
-
-    # TODO: Remove this line and uncomment function later
-    # hidden_neurons[1].weights[1] = 0.2
 
     # init bias values for hidden layer and output layer
     hidden_bias = Neurons()
@@ -316,7 +310,7 @@ def train_neural_net(x, y):
         output_neurons.append(neuron)
 
     initial_weigths = get_current_weights(input_neurons, hidden_neurons)
-    # print("\ninitial Weights: " + str(initial_weigths))
+    print("\nBeginning Training:")
 
     predictions = []
     answers = []
@@ -337,8 +331,6 @@ def train_neural_net(x, y):
                     batch_n += 1
                     if batch_n >= len(trainSet):
                         batch_n = 0
-                        '''print("Restarting batch")
-                    print(str(batch_n + 1) + ": " + str(trainLabel[batch_n]))'''
 
                     # input values
                     for i in range(nInput):
@@ -363,36 +355,19 @@ def train_neural_net(x, y):
                     total_Error.append(next_total_error)
 
                     # make prediction based on initial weights
-
                     prediction = predict_answer(output_neurons, j)
                     predictions.append(prediction)
                     answers.append(trainLabel[batch_n])
-
-                    # quadratic_cost_function(batchSize, output_neurons, answers)
-
-                    '''print("Batch " + str(j))
-                    print("Predicted Answer: " + str(prediction))
-                    print("Actual Answer: " + str(trainLabel[j]))
-                    print("------------------")'''
 
                     n += 1
 
                     # calculate back propagation
                     gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
-                    '''output_neurons_output = []
-                    for q in output_neurons:
-                        for p in range(len(q.out)):
-                            output_neurons_output.append(q.out[p])
-                    quad_cost = quadratic_cost_function(batchSize, output_neurons_output, trainLabel[batch_n])'''
 
                 current_weights = get_current_weights(input_neurons, hidden_neurons)
                 new_weights = calculate_new_weights(gradient_vectors, current_weights)
                 update_weights(input_neurons, hidden_neurons, new_weights)
 
-                '''prediction_number += 1
-                prediction = predict_answer(output_neurons, 0)
-                predictions.append(prediction)
-                answers.append(trainLabel[0])'''
                 len_answers = len(answers)
                 sub_set_answers = answers[last_answer_size:len_answers]
                 for n_answers in range(len(sub_set_answers)):
@@ -418,7 +393,7 @@ def train_neural_net(x, y):
             for i in range(len(predictions)):
                 if predictions[i] == answers[i]:
                     correct += 1
-            print("Accuracy: " + str(correct / len(answers)))
+            print("Training Accuracy: " + str(correct / len(answers)))
             accuracy.append(correct/len(answers))
 
             test_set_accuracy = test_accuracy(deepcopy(input_neurons), deepcopy(hidden_neurons),
@@ -431,10 +406,12 @@ def train_neural_net(x, y):
                 correct += 1
 
         print("\nTraining Complete:")
-        print(n)
         print("Initl Weights: " + str(initial_weigths))
         print("Final Weights: " + str(get_current_weights(input_neurons, hidden_neurons)))
-        print("\nAccuracy: " + str(correct/len(answers)))
+        print("Training Accuracy: " + str(correct/len(answers)))
+        print("Test Accuracy: " + str(ys[-1]))
+        end = time.clock()
+        print("Time taken to train: " + str("%.2f" % (end - start)) + " seconds")
         plt.plot(accuracy, label="Train Accuracy")
         plt.plot(ys, label="Test Accuracy")
         plt.legend()
@@ -443,15 +420,14 @@ def train_neural_net(x, y):
         plt.ylabel("Accuracy")
         plt.show()
 
-
-        '''continueInput = input("Continue Training? (y/n): ")
+        continueInput = input("Continue Training? (y/n): ")
         if continueInput == "n":
             continueInput = input("Save Weights to \"SavedWeights.txt\" (y/n)")
             if continueInput == "y":
                 save_weights(input_neurons, hidden_neurons, hidden_bias, output_bias)
                 break
             else:
-                break'''
+                break
         return
 
 
@@ -470,9 +446,9 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 30
-batchSize = 20
-learningRate = 1
+nEpochs = 1000
+batchSize = 2
+learningRate = 3
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
