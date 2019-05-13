@@ -7,6 +7,7 @@ from copy import deepcopy as deepcopy
 import time
 
 
+# Class defines the attributes and methods for each individual neuron in the network
 class Neurons:
     value = []
     weights = []
@@ -59,22 +60,6 @@ class Neurons:
             self.out.append(1 / (1 + math.exp(-self.net[batch])))
 
 
-# TODO: Straight Up delete your function
-def init_neurons():
-
-    neurons = []
-    for i in range(nInput):
-        for j in range(2):
-            neurons.append(random.uniform(0, 1))
-
-    for i in range(nHidden):
-        for j in range(2):
-            neurons.append(random.uniform(0, 1))
-
-    print("\nNumber of neurons: " + str(len(neurons)))
-    return neurons
-
-
 def parse_label(labels):
 
     label = [0] * nOutPut
@@ -100,6 +85,7 @@ def predict_answer(answers, batch):
     return highest_pos
 
 
+# Calculates the gradient descent values for the network weights
 def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch):
 
     gradient_vector = []
@@ -235,7 +221,7 @@ def quadratic_cost_function(batch_size, output, labels, batch):
 
 def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
 
-    test_subset = 1
+    test_subset = 1000
     predictions = []
     answers = []
     correct = 0
@@ -446,9 +432,10 @@ else:
     print("Not all arguments input. (nInput, nHidden, nOutput, Training Set, Training labels, Test Set, Test labels)")
     exit(1)
 
-nEpochs = 1000
+# TODO: ADD SAVE FUNCTION TO PREDICTION VALUES AND RUN BEST VARIABLES
+nEpochs = 30
 batchSize = 2
-learningRate = 3
+learningRate = 10
 
 for i in range(1, len(sys.argv)):
     print(sys.argv[i])
@@ -480,4 +467,4 @@ if batchSize > len(trainSet):
     print("\nERROR: Batch Size larger than Number of inputs")
     exit(1)
 
-train_neural_net(trainSet, trainLabel)
+train_neural_net()
