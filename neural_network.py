@@ -22,18 +22,23 @@ class Neurons:
         self.net = []
         self.out = []
 
+    # Initializes the weights of the nodes of size, n_weights.
+    # chooses a random value between 0 and 1 and multiplies value by 0.01
     def init_weights(self, n_weights):
         for i in range(n_weights):
             self.weights.append(0.01 * random.uniform(0, 1))
 
+    # Adds the input variable to the input of the object
     def init_value(self, value):
         self.value.append(value)
 
+    # calculates error value of output values
     def calculate_error(self, answer, step, batch):
 
         x = 0.5*((answer[batch][step] - self.out[batch])**2)
         self.error.append(x)
 
+    # weighted sum of all values in the input layer
     def weighted_sum(self, step, input_neurons, bias, batch):
 
         total = 0
@@ -43,6 +48,7 @@ class Neurons:
         total += bias
         self.net.append(total)
 
+    # weighted sum of all values in hidden layer.
     def hidden_weighted_sum(self, step, hidden_neurons, bias, batch):
 
         total = 0
@@ -52,6 +58,8 @@ class Neurons:
         total += bias
         self.net.append(total)
 
+    # Non-linearity function. uses sigmoid to normalize weighted sum.
+    # if a math range error occurs, values are multiplied by 0.01
     def sigmoid_function(self, batch):
         try:
             self.out.append(1/(1+math.exp(-self.net[batch])))
@@ -60,6 +68,7 @@ class Neurons:
             self.out.append(1 / (1 + math.exp(-self.net[batch])))
 
 
+# Takes value as input and returns an array where that value is 1 and all others 0. e.g. 5 = [0,0,0,0,0,1,0,0,0,0]
 def parse_label(labels):
 
     label = [0] * nOutPut
@@ -70,6 +79,7 @@ def parse_label(labels):
     return label
 
 
+# takes the highest percentage value from the network output and returns it as an answer
 def predict_answer(answers, batch):
     predictions = []
     for i in range(len(answers)):
@@ -129,6 +139,7 @@ def back_propagation(input_neurons, hidden_neurons, output_neurons, label, batch
     return input_gradients
 
 
+# Calculates the average value of each gradient in the batch
 def calculate_new_weights(gradient, current):
 
     # Calculate the final gradient error for all weights in the batch
@@ -149,6 +160,7 @@ def calculate_new_weights(gradient, current):
     return new_gradients
 
 
+# Replaces each weight in the network with the next new weight at position 0
 def update_weights(inputs, hidden, new):
 
     for i in range(len(inputs)):
@@ -162,6 +174,7 @@ def update_weights(inputs, hidden, new):
     return
 
 
+# returns an array of all current network weights for all input and hidden layer nodes
 def get_current_weights(inputs, hidden):
 
     weights = []
@@ -175,6 +188,7 @@ def get_current_weights(inputs, hidden):
     return weights
 
 
+# saves all current weight values in a file named "SavedWeights.txt"
 def save_weights(input, hidden, hidden_bias, output_bias):
 
     f = open("SavedWeights.txt", "a")
@@ -199,6 +213,7 @@ def save_weights(input, hidden, hidden_bias, output_bias):
     return
 
 
+# quadratic cost function, takes outputs and training labels and returns quadratic cost
 def quadratic_cost_function(batch_size, output, labels, batch):
 
     labels_vector = []
@@ -219,12 +234,15 @@ def quadratic_cost_function(batch_size, output, labels, batch):
     return total
 
 
+# uses the forward pass method to calculate test set accuracy
 def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
 
     test_subset = 1000
     predictions = []
     answers = []
     correct = 0
+
+    # forward pass
     for step in range(test_subset):
 
         for i in range(nInput):
@@ -259,6 +277,7 @@ def test_accuracy(inputs, hidden, output, hidden_bias, output_bias):
     return accuracy
 
 
+# main function for initializing and updating network weights
 def train_neural_net():
 
     start = time.clock()
@@ -306,6 +325,7 @@ def train_neural_net():
     batch_n = -1
     n = 0
     last_answer_size = 0
+    # Update initial weights using forward and back propagation
     while True:
         # update weights in k batch size for epoch times
         for k in range(nEpochs):
@@ -347,13 +367,15 @@ def train_neural_net():
 
                     n += 1
 
-                    # calculate back propagation
+                    # calculate back propagation and save gradient values to array
                     gradient_vectors.append(back_propagation(input_neurons, hidden_neurons, output_neurons, label[j], j))
 
+                # After each batch, update the weights of the network
                 current_weights = get_current_weights(input_neurons, hidden_neurons)
                 new_weights = calculate_new_weights(gradient_vectors, current_weights)
                 update_weights(input_neurons, hidden_neurons, new_weights)
 
+                # quadratic cost calculation
                 len_answers = len(answers)
                 sub_set_answers = answers[last_answer_size:len_answers]
                 for n_answers in range(len(sub_set_answers)):
@@ -361,7 +383,7 @@ def train_neural_net():
                     xs.append(quadratic_cost)
                 last_answer_size += batchSize
 
-                # reset values for neurons
+                # reset values for neurons between each batch
                 total_Error.clear()
                 gradient_vectors.clear()
                 for i in range(len(input_neurons)):
@@ -374,6 +396,7 @@ def train_neural_net():
                     output_neurons[i].net.clear()
                     output_neurons[i].out.clear()
 
+            # after each epoch, print the Training set accuracy
             print("Epoch " + str(k + 1))
             correct = 0
             for i in range(len(predictions)):
@@ -382,6 +405,7 @@ def train_neural_net():
             print("Training Accuracy: " + str(correct / len(answers)))
             accuracy.append(correct/len(answers))
 
+            # calculates accuracy for test set
             test_set_accuracy = test_accuracy(deepcopy(input_neurons), deepcopy(hidden_neurons),
                                               deepcopy(output_neurons), hidden_bias, output_bias)
             ys.append(test_set_accuracy)
@@ -406,7 +430,7 @@ def train_neural_net():
         plt.ylabel("Accuracy")
         plt.show()
 
-        continueInput = input("Continue Training? (y/n): ")
+        '''continueInput = input("Continue Training? (y/n): ")
         if continueInput == "n":
             continueInput = input("Save Weights to \"SavedWeights.txt\" (y/n)")
             if continueInput == "y":
@@ -414,7 +438,7 @@ def train_neural_net():
                 break
             else:
                 break
-        return
+        return'''
 
 
 argumentNumber = len(sys.argv)
@@ -467,4 +491,5 @@ if batchSize > len(trainSet):
     print("\nERROR: Batch Size larger than Number of inputs")
     exit(1)
 
+# begin training network
 train_neural_net()
